@@ -33,15 +33,11 @@ def call(url, path):
 
 
 # Exceptions
-
-
 class NoUrl(Exception):
     pass
 
 
 # Entry point
-
-
 if __name__ == '__main__':
     try:
         uri = sys.argv[1]
