@@ -1,17 +1,17 @@
 {
  "businessName": "",
  "businessWebsite": "",
- "city": "Norwell",
+ "city": "Los Angeles",
  "continent": "North America",
  "country": "United States",
  "countryCode": "US",
  "ipName": "",
  "ipType": "Residential",
  "isp": "Verizon Business",
- "lat": "42.1596",
- "lon": "-70.8217",
- "org": "EdgeCast NetBlk",
+ "lat": "34.05223",
+ "lon": "-118.24368",
+ "org": "Verizon Business",
  "query": "93.184.216.34",
- "region": "Massachusetts",
+ "region": "California",
  "status": "success"
 }

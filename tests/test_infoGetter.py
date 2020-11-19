@@ -3,19 +3,20 @@ import json
 from unittest import TestCase
 
 from infogetter import url_to_filename, InfoGetter, InvalidFilePath, BrokenJsonFile, BadUrlAtIPLookUp, NoApi, NoWhois, \
-    NoGeo, NoSitemap
+    NoGeo, NoSitemap, NoWiki
 
+TEST_URLS = ['example.com', 'example.com/', 'example.com/asfaf/aa', 'www.example.com', 'www.example.com/',
+             'www.example.com/asfjao/assa', 'http://www.example.com', 'http://www.example.com/',
+             'http://www.example.com/asfagg', 'https://www.example.com', 'https://www.example.com/',
+             'https://www.example.com/asfoka']
 
-tests_urls = ['example.com', 'example.com/', 'example.com/asfaf/aa', 'www.example.com', 'www.example.com/',
-              'www.example.com/asfjao/assa', 'http://www.example.com', 'http://www.example.com/',
-              'http://www.example.com/asfagg', 'https://www.example.com', 'https://www.example.com/',
-              'https://www.example.com/asfoka']
+PATH = os.getcwd()
 
 
 class TestInfoGetter(TestCase):
     def test_url_to_filename(self):
         results = []
-        for url in tests_urls:
+        for url in TEST_URLS:
             results.append(url_to_filename(url))
 
         r_0 = results[0]
@@ -70,7 +71,7 @@ class TestInfoGetter(TestCase):
         ig = InfoGetter('example.org')
 
         results = []
-        for url in tests_urls:
+        for url in TEST_URLS:
             results.append(ig._sanitize_url(url))
 
         r_0 = results[0]
@@ -85,7 +86,7 @@ class TestInfoGetter(TestCase):
         ig = InfoGetter('example.org')
         # Check url sanitizing
         results = []
-        for url in tests_urls:
+        for url in TEST_URLS:
             results.append(ig._get_ip(url))
 
         r_0 = results[0]
@@ -113,8 +114,10 @@ class TestInfoGetter(TestCase):
         os.rmdir(os.getcwd() + '/output')
 
     def test_get_potential_api(self):
+        print("[!] Warning, this test is dependent on no api changes for github.com")
+
         ig = InfoGetter('github.com')
-        self.assertEqual('https://api.github.com/', ig._get_potential_api(ig.url))
+        self.assertEqual('developer.github.com', ig._get_potential_api(ig.url))
         ig = InfoGetter('example.org')
         self.assertRaises(NoApi, ig._get_potential_api, ig.url)
 
@@ -165,11 +168,11 @@ class TestInfoGetter(TestCase):
 
     def test_get_geo_imgs(self):
         print("[!] Warning, this test is dependent on no server changes for example.org")
-        correct_response = ['https://maps.google.com/maps?width=100%&height=600&hl=es&q=CA, US&ie=UTF8&t=&z=7&iwloc=B&output=embed',
-                            'https://www.google.com/maps/@?api=1&map_action=map&center=42.1596, -70.8217&zoom=13']
+        correct_response = [None,
+                            'https://www.google.com/maps/@?api=1&map_action=map&center=34.05223, -118.24368&zoom=13']
         ig = InfoGetter('example.org')
         result = ig._get_geo_imgs(ig._get_whois_data(ig._get_ip(ig.url)), ig._get_geo_location_data(ig._get_ip(ig.url)),
-                                ig.filepath)
+                                  ig.filepath)
 
         self.assertEqual(correct_response, result)
 
@@ -201,8 +204,8 @@ class TestInfoGetter(TestCase):
         os.rmdir(os.getcwd() + '/output')
 
     def test_get_sitemap(self):
-        print("[!] Warning, this test is dependent on no changes on example.org")
-        correct_response = 'https://a-v2.sndcdn.com/sitemap.txt'
+        print("[!] Warning, this test is dependent on no changes on example.org and soundcloud.com")
+        correct_response = 'http://soundcloud.com/sitemap.xml'
         ig = InfoGetter('soundcloud.com')
         self.assertEqual(correct_response, ig._get_sitemap(ig.url, ig._get_robot(ig.url)))
 
@@ -215,3 +218,18 @@ class TestInfoGetter(TestCase):
         os.rmdir(os.getcwd() + '/output/soundcloud - com')
         os.rmdir(os.getcwd() + '/output')
 
+    def test_get_wiki(self):
+        print("[!] Warning, this test is dependent on no changes on wikipedia.org")
+
+        #  Control for locations
+        correct_response = 'wikipedia.org/wiki/Example.com'
+        ig = InfoGetter('example.org')
+        self.assertEqual(correct_response, '.'.join(ig._get_wiki(ig.url).split('.')[1:]))
+
+        ig = InfoGetter('afkaofkoaf.com')
+        self.assertRaises(NoWiki, ig._get_wiki, ig.url)
+
+        # Clean
+        os.rmdir(os.getcwd() + '/output/afkaofkoaf - com')
+        os.rmdir(os.getcwd() + '/output/example - org')
+        os.rmdir(os.getcwd() + '/output')
