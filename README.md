@@ -1,8 +1,11 @@
-#### bckg_info.py 
+### bckg_info.py 
 
 Following background research recommendations on Richard Lawson's book ["Web Scraping with Python"](https://www.amazon.com/Scraping-Community-Experience-Distilled-English-ebook/dp/B00YSIL1XK), 
-this script generates an .html report on any given domain, collecting the following information:
+this script generates an .html report on any given domain, and then automatically opens it on the default browser.
 
+![](https://github.com/tfari/bckg_info/blob/master/screenshot.jpg)
+
+**Collects the following information**:
 * URL
 * IP
 * TITLE
