@@ -84,7 +84,7 @@ class InfoGetter(object):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0'}
         self.requester = RequestHandler([''], RequestData(GET, headers=headers), RequestErrorData(allow_errors=False))
 
-        # ouput_directory checks
+        # output_directory checks
         default_path = os.getcwd() + '/output'
         if output_directory and not os.path.isdir(output_directory):
             raise InvalidFilePath(output_directory)
@@ -126,12 +126,19 @@ class InfoGetter(object):
         # First
         self.data['url'] = self.url
 
-        # Do not catch errors at IP lookup
+        # Do not catch errors at IP lookup, as it might indicate connection issues or bad URLs.
         self.data['ip'] = self._get_ip(self.url)
 
-        # If IP lookup didn't raise an error, these shouldn't either
+        # If IP lookup didn't raise an error, this shouldn't either
         self.data['title'] = self._get_title(self.url)
-        self.data['estimated'] = self._get_estimated_size(self.url)
+
+        # But this might if google changed structure
+        try:
+            self.data['estimated'] = self._get_estimated_size(self.url)
+        except Exception as e:
+            err = ("[!] Possible Google structure change: _get_estimated_size failed with exception: %s" % str(e))
+            print("%s" % err)
+            self.data['estimated'] = ('Error', err)
 
         # Get potential API, catch if none
         try:
@@ -212,7 +219,8 @@ class InfoGetter(object):
 
         return self.requester.responses[0]
 
-    def _sanitize_url(self, url):
+    @staticmethod
+    def _sanitize_url(url):
         """
         Returns a root url without http/https and/or www.
 
@@ -260,7 +268,7 @@ class InfoGetter(object):
         google_query_url = 'https://www.google.com/search?q=site:%s' % self._sanitize_url(url)
         r = self._req_wrap(google_query_url)
 
-        bs_result_stats = BeautifulSoup(r.text, 'html.parser').findAll('div', {'id': 'resultStats'})[0].getText()
+        bs_result_stats = BeautifulSoup(r.text, 'html.parser').find('div', {'id': 'result-stats'}).getText()
         bs_num = re.findall(re.compile('[0-9,]+'), bs_result_stats)[0].replace(',', '')
         return google_query_url, int(bs_num)
 
@@ -278,7 +286,7 @@ class InfoGetter(object):
         r = self._req_wrap(google_query_url)
 
         bs_search_results = BeautifulSoup(r.text, 'html.parser').findAll('div', {'id': 'search'})[0]
-        bs_first_result = bs_search_results.findAll('cite')[0].getText()
+        bs_first_result = bs_search_results.find('cite').find(text=True, recursive=False)
 
         # Check its API
         if bs_first_result.find(self._sanitize_url(url)) != -1:
@@ -296,7 +304,8 @@ class InfoGetter(object):
 
         return 'https://www.google.com/search?tbm=nws&q="%s"' % self._sanitize_url(url)
 
-    def _get_whois_data(self, ip):
+    @staticmethod
+    def _get_whois_data(ip):
         """
         Get whois data on the ip
 
@@ -346,7 +355,7 @@ class InfoGetter(object):
 
     def _get_geo_imgs(self, whois_data, geolocation_data, filepath):
         """
-        Get the iframe  link of the location gotten through whois_data.
+        Get the iframe link of the location gotten through whois_data.
         Save a static image and google maps link gotten through geolocation_data.
 
         :param whois_data: dict
@@ -386,7 +395,9 @@ class InfoGetter(object):
 
                 img = self._req_wrap(map_query)
 
-                open('%s/location.jpg' % filepath, 'wb').write(img.content)
+                with open('%s/location.jpg' % filepath, 'wb') as f:
+                    f.write(img.content)
+
             except IndexError:
                 raise GoogleHiccup()
 
@@ -466,19 +477,16 @@ class InfoGetter(object):
         r = self._req_wrap(google_query)
 
         bs_search_results = BeautifulSoup(r.text, 'html.parser').findAll('div', {'id': 'search'})[0]
+        bs_first_result = bs_search_results.find('a')
 
-        # Catch lack of wiki
-        try:
-            bs_first_result = bs_search_results.findAll('cite')[0].getText()
-        except IndexError:
+        # Make sure it is wiki
+        if not bs_first_result:
             raise NoWiki()
 
-        return bs_first_result
+        return bs_first_result.get('href')
 
 
 # Exceptions
-
-
 class InvalidFilePath(Exception):
     pass
 
