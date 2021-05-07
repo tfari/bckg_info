@@ -81,7 +81,7 @@ class InfoGetter(object):
         self.url = url
         self.data = {}
         self.loaded_flag = False
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0'}
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:56.0) Gecko/20100101 Firefox/56.0'}
         self.requester = RequestHandler([''], RequestData(GET, headers=headers), RequestErrorData(allow_errors=False))
 
         # output_directory checks
@@ -136,7 +136,7 @@ class InfoGetter(object):
         try:
             self.data['estimated'] = self._get_estimated_size(self.url)
         except Exception as e:
-            err = ("[!] Possible Google structure change: _get_estimated_size failed with exception: %s" % str(e))
+            err = ("[!] Possible Google issue: _get_estimated_size failed with exception: %s" % str(e))
             print("%s" % err)
             self.data['estimated'] = ('Error', err)
 
@@ -145,6 +145,10 @@ class InfoGetter(object):
             self.data['potential_api'] = self._get_potential_api(self.url)
         except NoApi:
             self.data['potential_api'] = None
+        except Exception as e:
+            err = ("[!] Possible Google issue: _get_estimated_size failed with exception: %s" % str(e))
+            print("%s" % err)
+            self.data['potential_api'] = ('Error', err)
 
         # Save news_url
         self.data['news_url'] = self._get_news_url(self.url)
@@ -175,7 +179,7 @@ class InfoGetter(object):
             try:
                 self.data['geo_maps'] = self._get_geo_imgs(self.data['whois'], self.data['geo_location'], self.filepath)
             except GoogleHiccup:
-                self.data['geo_maps'] = None
+                self.data['geo_maps'] = [None]
 
         # Call builtwith
         self.data['builtwith'] = self._get_built_with(self.url)
@@ -197,8 +201,12 @@ class InfoGetter(object):
             self.data['wiki'] = self._get_wiki(self.url)
         except NoWiki:
             self.data['wiki'] = None
+        except Exception as e:
+            err = ("[!] Possible Google issue: _get_estimated_size failed with exception: %s" % str(e))
+            print("%s" % err)
+            self.data['wiki'] = ('Error', err)
 
-        # Save data
+    # Save data
         with open(self.filepath + '/data.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(self.data, indent=True))
 
